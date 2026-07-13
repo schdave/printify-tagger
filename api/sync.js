@@ -70,8 +70,12 @@ module.exports = async (req, res) => {
   const { shopifyProductId, printifyProductId, preview } = req.body;
 
   try {
-    const shopId = await getPrintifyShopId();
+    // Debug: check env vars are set
+    if (!PRINTIFY_TOKEN) return res.status(500).json({ error: 'PRINTIFY_TOKEN not set' });
+    if (!SHOPIFY_TOKEN) return res.status(500).json({ error: 'SHOPIFY_TOKEN not set' });
+    if (!SHOPIFY_STORE) return res.status(500).json({ error: 'SHOPIFY_STORE not set' });
 
+    const shopId = await getPrintifyShopId();
     // Find Printify product
     let printifyProduct;
     if (printifyProductId) {
