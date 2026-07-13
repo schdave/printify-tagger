@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Printify Color Tagger</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; }
+    input, button { padding: 8px 12px; margin: 6px 0; width: 100%; box-sizing: border-box; }
+    button { background: #008060; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    button:hover { background: #006e52; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #f4f4f4; }
+    .tag { background: #e3f5ef; color: #008060; padding: 2px 8px; border-radius: 10px; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <h2>🎨 Printify Color Image Tagger</h2>
+  <p>Enter your Shopify Product ID to sync color alt texts from Printify.</p>
+
+  <label>Shopify Product ID (numeric)</label>
+  <input id="productId" type="text" placeholder="e.g. 9556598325503" />
+
+  <button onclick="preview()">Preview Color Mapping</button>
+
+  <div id="output"></div>
+
+  <script>
+    async function preview() {
+      const productId = document.getElementById('productId').value.trim();
+      if (!productId) return alert('Enter a product ID');
+      document.getElementById('output').innerHTML = '<p>Loading...</p>';
+
+      const res = await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shopifyProductId: productId, preview: true })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        document.getElementById('output').innerHTML = `<p class="error">Error: ${data.error}</p>`;
+        return;
+      }
+
+      let html = `<table><tr><th>#</th><th>Preview</th><th>Current Alt</th><th>New Color</th></tr>`;
+      data.results.forEach(r => {
+        html += `<tr>
+          <td>${r.position}</td>
+          <td><img src="${r.src}" width="60" style="border-radius:4px"></td>
+          <td>${r.currentAlt || '<em>empty</em>'}</td>
+          <td>${r.newAlt ? `<span class="tag">${r.newAlt}</span>` : '<em>unmatched</em>'}</td>
+        </tr>`;
+      });
+      html += `</table>`;
+      html += `<button onclick="apply('${productId}')" style="margin-top:16px">✅ Apply Alt Text Tags</button>`;
+      document.getElementById('output').innerHTML = html;
+    }
+
+    async function apply(productId) {
+      document.getElementById('output').innerHTML = '<p>Applying tags...</p>';
+      const res = await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shopifyProductId: productId, preview: false })
+      });
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById('output').innerHTML = `<p class="error">Error: ${data.error}</p>`;
+      } else {
+        document.getElementById('output').innerHTML = `<p class="success">✅ Done! Tagged ${data.tagged} images with color names.</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
