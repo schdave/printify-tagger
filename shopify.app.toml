@@ -1,0 +1,13 @@
+name = "Printify Tagger"
+client_id = "2e0b13a79e1852ba7e08451216d9dabd"
+application_url = "https://printify-tagger.vercel.app"
+embedded = false
+
+[access_scopes]
+scopes = "write_products,read_products"
+
+[auth]
+redirect_urls = ["https://printify-tagger.vercel.app/api/callback"]
+
+[webhooks]
+api_version = "2026-07"
