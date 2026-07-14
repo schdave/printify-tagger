@@ -18,7 +18,8 @@ async function getPrintifyProducts(shopId) {
     headers: { Authorization: `Bearer ${PRINTIFY_TOKEN}` }
   });
   const data = await res.json();
-  return data.data;
+  return Array.isArray(data) ? data : (data.data || []);
+
 }
 
 async function getPrintifyProduct(shopId, productId) {
@@ -84,10 +85,14 @@ module.exports = async (req, res) => {
     } else {
       // Try to match by external_id (Shopify product ID)
       const products = await getPrintifyProducts(shopId);
-      printifyProduct = products.find(p =>
-        p.external?.id === shopifyProductId.toString() ||
-        p.external?.id === `gid://shopify/Product/${shopifyProductId}`
-      );
+      const products = await getPrintifyProducts(shopId);
+if (!Array.isArray(products)) {
+  return res.status(500).json({ error: 'Unexpected Printify products response', raw: products });
+}
+printifyProduct = products.find(p =>
+  p.external?.id === shopifyProductId.toString() ||
+  p.external?.id === `gid://shopify/Product/${shopifyProductId}`
+);
       if (!printifyProduct) return res.status(404).json({ error: 'Printify product not found for this Shopify product' });
       printifyProduct = await getPrintifyProduct(shopId, printifyProduct.id);
     }
