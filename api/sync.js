@@ -1,8 +1,9 @@
 const fetch = require('node-fetch');
 
-const PRINTIFY_TOKEN = process.env.PRINTIFY_TOKEN;
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE; // e.g. your-store.myshopify.com
-const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN; // Admin API token
+const PRINTIFY_TOKEN = process.env.PRINTIFY_TOKEN || process.env.printify_token;
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE || process.env.shopify_store;
+const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN || process.env.shopify_token;
+
 
 async function getPrintifyShopId() {
   const res = await fetch('https://api.printify.com/v1/shops.json', {
