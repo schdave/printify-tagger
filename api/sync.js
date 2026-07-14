@@ -4,7 +4,6 @@ const PRINTIFY_TOKEN = process.env.PRINTIFY_TOKEN || process.env.printify_token;
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE || process.env.shopify_store;
 const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN || process.env.shopify_token;
 
-
 async function getPrintifyShopId() {
   const res = await fetch('https://api.printify.com/v1/shops.json', {
     headers: { Authorization: `Bearer ${PRINTIFY_TOKEN}` }
@@ -19,7 +18,6 @@ async function getPrintifyProducts(shopId) {
   });
   const data = await res.json();
   return Array.isArray(data) ? data : (data.data || []);
-
 }
 
 async function getPrintifyProduct(shopId, productId) {
@@ -54,7 +52,6 @@ async function updateShopifyImageAlt(shopifyProductId, imageId, alt) {
 }
 
 function detectColorOption(variant) {
-  // Printify variants have options array with {name, value}
   const colorOption = variant.options?.find(o =>
     ['color', 'colour', 'Color', 'Colour'].includes(o.name)
   );
@@ -81,52 +78,51 @@ module.exports = async (req, res) => {
     const t1 = Date.now();
     if (!shopId) return res.status(500).json({ error: 'No Printify shop found' });
 
-    const printifyProduct = await getPrintifyProduct(shopId, printifyProductId || 'TEST');
-    const t2 = Date.now();
-
-    return res.status(200).json({
-      debug: true,
-      shopId,
-      timings: { shopId: t1-t0, product: t2-t1 },
-      productKeys: Object.keys(printifyProduct || {})
-    });
-
-printifyProduct = products.find(p =>
-  p.external?.id === shopifyProductId.toString() ||
-  p.external?.id === `gid://shopify/Product/${shopifyProductId}`
-);
-      if (!printifyProduct) return res.status(404).json({ error: 'Printify product not found for this Shopify product' });
+    let printifyProduct;
+    if (printifyProductId) {
+      printifyProduct = await getPrintifyProduct(shopId, printifyProductId);
+    } else {
+      const products = await getPrintifyProducts(shopId);
+      if (!Array.isArray(products)) {
+        return res.status(500).json({ error: 'Unexpected Printify products response', raw: products });
+      }
+      printifyProduct = products.find(p =>
+        p.external?.id === shopifyProductId.toString() ||
+        p.external?.id === `gid://shopify/Product/${shopifyProductId}`
+      );
+      if (!printifyProduct) return res.status(404).json({ error: 'Printify product not found' });
       printifyProduct = await getPrintifyProduct(shopId, printifyProduct.id);
     }
+    const t2 = Date.now();
 
-    // Build variant ID → color name map
+    // DEBUG — remove after confirming timings
+    if (req.body.debug) {
+      return res.status(200).json({
+        debug: true,
+        shopId,
+        timings: { shopId: t1-t0, product: t2-t1 },
+        productKeys: Object.keys(printifyProduct || {})
+      });
+    }
+
     const variantColorMap = {};
     for (const variant of printifyProduct.variants) {
       const color = detectColorOption(variant);
       if (color) variantColorMap[variant.id] = color;
     }
 
-    // Build image → color map from Printify
-    // Each image has variant_ids array
     const printifyImageColorMap = {};
     for (const img of printifyProduct.images) {
       const colors = new Set();
       for (const vid of img.variant_ids) {
         if (variantColorMap[vid]) colors.add(variantColorMap[vid]);
       }
-      if (colors.size === 1) {
-        printifyImageColorMap[img.position] = [...colors][0];
-      } else if (colors.size > 1) {
-        // Multiple colors — skip or use first
-        printifyImageColorMap[img.position] = [...colors][0];
-      }
+      printifyImageColorMap[img.position] = [...colors][0] || null;
     }
 
-    // Get Shopify product images
     const shopifyProduct = await getShopifyProduct(shopifyProductId);
     const shopifyImages = shopifyProduct.images;
 
-    // Match by position (1-indexed)
     const results = [];
     for (const shopifyImg of shopifyImages) {
       const color = printifyImageColorMap[shopifyImg.position];
@@ -143,13 +139,12 @@ printifyProduct = products.find(p =>
       return res.status(200).json({ preview: true, results });
     }
 
-    // Apply alt texts
     const applied = [];
     for (const r of results) {
       if (r.newAlt && r.newAlt !== r.currentAlt) {
         await updateShopifyImageAlt(shopifyProductId, r.shopifyImageId, r.newAlt);
         applied.push(r);
-        await new Promise(resolve => setTimeout(resolve, 300)); // rate limit
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
 
