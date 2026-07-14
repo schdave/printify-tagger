@@ -78,9 +78,13 @@ module.exports = async (req, res) => {
     const t1 = Date.now();
     if (!shopId) return res.status(500).json({ error: 'No Printify shop found' });
 
-    let printifyProduct;
+        let printifyProduct;
     if (printifyProductId) {
       printifyProduct = await getPrintifyProduct(shopId, printifyProductId);
+      if (!printifyProduct?.variants) {
+        return res.status(500).json({ error: 'Printify product fetch failed', raw: printifyProduct });
+      }
+    }
     } else {
       const products = await getPrintifyProducts(shopId);
       if (!Array.isArray(products)) {
