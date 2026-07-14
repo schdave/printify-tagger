@@ -39,7 +39,7 @@
       const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopifyProductId: productId, preview: true })
+        body: JSON.stringify({ shopifyProductId: productId, printifyProductId: document.getElementById('printifyId').value.trim() || undefined, preview: true })
       });
       const data = await res.json();
 
@@ -67,7 +67,7 @@
       const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopifyProductId: productId, preview: false })
+        body: JSON.stringify({ shopifyProductId: productId, printifyProductId: document.getElementById('printifyId').value.trim() || undefined, preview: false })
       });
       const data = await res.json();
       if (data.error) {
