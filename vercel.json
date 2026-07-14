@@ -2,6 +2,9 @@
   "functions": {
     "api/sync.js": {
       "maxDuration": 60
+    },
+    "api/callback.js": {
+      "maxDuration": 30
     }
   }
 }
