@@ -72,29 +72,24 @@ module.exports = async (req, res) => {
   const { shopifyProductId, printifyProductId, preview } = req.body;
 
   try {
-    // Debug: check env vars are set
     if (!PRINTIFY_TOKEN) return res.status(500).json({ error: 'PRINTIFY_TOKEN not set' });
     if (!SHOPIFY_TOKEN) return res.status(500).json({ error: 'SHOPIFY_TOKEN not set' });
     if (!SHOPIFY_STORE) return res.status(500).json({ error: 'SHOPIFY_STORE not set' });
 
+    const t0 = Date.now();
     const shopId = await getPrintifyShopId();
-    // Find Printify product
-    let printifyProduct;
-    if (printifyProductId) {
-      printifyProduct = await getPrintifyProduct(shopId, printifyProductId);
-        } else {
-      // Try to match by external_id (Shopify product ID)
-      const products = await getPrintifyProducts(shopId);
-      if (!Array.isArray(products)) {
-        return res.status(500).json({ error: 'Unexpected Printify products response', raw: products });
-      }
-      printifyProduct = products.find(p =>
-        p.external?.id === shopifyProductId.toString() ||
-        p.external?.id === `gid://shopify/Product/${shopifyProductId}`
-      );
-      if (!printifyProduct) return res.status(404).json({ error: 'Printify product not found for this Shopify product' });
-      printifyProduct = await getPrintifyProduct(shopId, printifyProduct.id);
-    }
+    const t1 = Date.now();
+    if (!shopId) return res.status(500).json({ error: 'No Printify shop found' });
+
+    const printifyProduct = await getPrintifyProduct(shopId, printifyProductId || 'TEST');
+    const t2 = Date.now();
+
+    return res.status(200).json({
+      debug: true,
+      shopId,
+      timings: { shopId: t1-t0, product: t2-t1 },
+      productKeys: Object.keys(printifyProduct || {})
+    });
 
 printifyProduct = products.find(p =>
   p.external?.id === shopifyProductId.toString() ||
