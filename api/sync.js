@@ -82,13 +82,20 @@ module.exports = async (req, res) => {
     let printifyProduct;
     if (printifyProductId) {
       printifyProduct = await getPrintifyProduct(shopId, printifyProductId);
-    } else {
+        } else {
       // Try to match by external_id (Shopify product ID)
       const products = await getPrintifyProducts(shopId);
-      const products = await getPrintifyProducts(shopId);
-if (!Array.isArray(products)) {
-  return res.status(500).json({ error: 'Unexpected Printify products response', raw: products });
-}
+      if (!Array.isArray(products)) {
+        return res.status(500).json({ error: 'Unexpected Printify products response', raw: products });
+      }
+      printifyProduct = products.find(p =>
+        p.external?.id === shopifyProductId.toString() ||
+        p.external?.id === `gid://shopify/Product/${shopifyProductId}`
+      );
+      if (!printifyProduct) return res.status(404).json({ error: 'Printify product not found for this Shopify product' });
+      printifyProduct = await getPrintifyProduct(shopId, printifyProduct.id);
+    }
+
 printifyProduct = products.find(p =>
   p.external?.id === shopifyProductId.toString() ||
   p.external?.id === `gid://shopify/Product/${shopifyProductId}`
