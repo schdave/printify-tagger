@@ -36,7 +36,7 @@
       if (!productId) return alert('Enter a product ID');
       document.getElementById('output').innerHTML = '<p>Loading...</p>';
 
-      const res = await fetch('/api/sync', {
+      const res = await fetch('/.netlify/functions/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shopifyProductId: productId, printifyProductId: document.getElementById('printifyId').value.trim() || undefined, preview: true })
@@ -64,7 +64,7 @@
 
     async function apply(productId) {
       document.getElementById('output').innerHTML = '<p>Applying tags...</p>';
-      const res = await fetch('/api/sync', {
+      const res = await fetch('/.netlify/functions/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shopifyProductId: productId, printifyProductId: document.getElementById('printifyId').value.trim() || undefined, preview: false })
